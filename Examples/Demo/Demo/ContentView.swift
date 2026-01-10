@@ -48,6 +48,13 @@ struct ContentView: View {
             Label("Images", systemImage: "photo")
           }
           NavigationLink {
+            VideosView()
+              .navigationTitle("Videos")
+              .navigationBarTitleDisplayMode(.inline)
+          } label: {
+            Label("Videos", systemImage: "play.rectangle")
+          }
+          NavigationLink {
             TablesView()
               .navigationTitle("Tables")
               .navigationBarTitleDisplayMode(.inline)

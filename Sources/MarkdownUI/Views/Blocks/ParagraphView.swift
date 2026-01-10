@@ -27,7 +27,9 @@ struct ParagraphView: View {
   }
 
   @ViewBuilder private var label: some View {
-    if let imageView = ImageView(content) {
+    if let videoView = VideoView(content) {
+      videoView
+    } else if let imageView = ImageView(content) {
       imageView
     } else if #available(iOS 16.0, macOS 13.0, tvOS 16.0, watchOS 9.0, *),
       let imageFlow = ImageFlow(content)

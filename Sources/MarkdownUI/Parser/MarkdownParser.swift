@@ -3,16 +3,24 @@ import Foundation
 
 extension Array where Element == BlockNode {
   init(markdown: String) {
-    let blocks = UnsafeNode.parseMarkdown(markdown) { document in
+    // Pre-process: Convert !video(title)[url] to ![video:title](url) for parsing
+    let processedMarkdown = markdown.preprocessVideoSyntax()
+    
+    let blocks = UnsafeNode.parseMarkdown(processedMarkdown) { document in
       document.children.compactMap(BlockNode.init(unsafeNode:))
     }
-    self.init(blocks ?? .init())
+    
+    // Post-process: Convert video images back to video nodes
+    let processedBlocks = (blocks ?? []).map { $0.convertVideoImages() }
+    self.init(processedBlocks)
   }
 
   func renderMarkdown() -> String {
-    UnsafeNode.makeDocument(self) { document in
+    let markdown = UnsafeNode.makeDocument(self) { document in
       String(cString: cmark_render_commonmark(document, CMARK_OPT_DEFAULT, 0))
     } ?? ""
+    // Post-process: Convert ![video:title](url) back to !video(title)[url]
+    return markdown.postprocessVideoSyntax()
   }
 
   func renderPlainText() -> String {
@@ -414,6 +422,15 @@ extension UnsafeNode {
     case .image(let source, let children):
       guard let node = cmark_node_new(CMARK_NODE_IMAGE) else { return nil }
       cmark_node_set_url(node, source)
+      children.compactMap(UnsafeNode.make).forEach { cmark_node_append_child(node, $0) }
+      return node
+    case .video(let source, let children):
+      // Render video as !video[alt](url) in markdown
+      // For now, we'll render it as an image with a special marker
+      // This will be converted back when parsing
+      guard let node = cmark_node_new(CMARK_NODE_IMAGE) else { return nil }
+      cmark_node_set_url(node, "video:\(source)")
+      // Set the alt text (children contain the alt text)
       children.compactMap(UnsafeNode.make).forEach { cmark_node_append_child(node, $0) }
       return node
     }
