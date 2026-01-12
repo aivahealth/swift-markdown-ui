@@ -1,11 +1,8 @@
 import SwiftUI
 
 struct VideoView: View {
-  @Environment(\.theme.image) private var image
-  @Environment(\.videoProvider) private var videoProvider
+  @Environment(\.theme) private var theme
   @Environment(\.videoAction) private var videoAction
-  @Environment(\.videoPlayButton) private var customPlayButton
-  @Environment(\.videoPlayButtonTint) private var playButtonTint
   @Environment(\.baseURL) private var baseURL
 
   private let data: RawVideoData
@@ -15,20 +12,30 @@ struct VideoView: View {
   }
 
   var body: some View {
-    self.image.makeBody(
-      configuration: .init(
-        label: .init(self.label),
-        content: .init(block: self.content)
-      )
+    let configuration = self.makeConfiguration()
+    self.theme.video.makeBody(configuration: configuration)
+  }
+
+  private func makeConfiguration() -> VideoConfiguration {
+    let labelView = self.labelView
+    return VideoConfiguration(
+      label: .init(labelView),
+      content: .init(block: self.content),
+      videoURL: self.url,
+      title: self.data.alt,
+      thumbnailBackgroundColor: self.theme.videoThumbnailBackgroundColor,
+      titleTextColor: self.theme.videoTitleTextColor,
+      titleBackgroundColor: self.theme.videoTitleBackgroundColor,
+      playButtonColor: self.theme.videoPlayButtonColor
     )
   }
 
-  private var label: some View {
+  private var labelView: some View {
     ZStack {
-      // Thumbnail from video provider
-      self.videoProvider.makeThumbnail(url: self.url, title: self.data.alt)
+      // Built-in thumbnail with theme colors
+      self.thumbnail
       
-      // Play button overlay - centered
+      // Play button overlay - centered, but offset up to account for title overlay at bottom
       if let videoAction = self.videoAction, let url = self.url {
         Button {
           videoAction(url)
@@ -36,25 +43,40 @@ struct VideoView: View {
           self.playButton
         }
         .buttonStyle(.plain)
+        .offset(y: -25) // Offset up to account for title overlay at bottom
       } else {
         self.playButton
+          .offset(y: -25) // Offset up to account for title overlay at bottom
       }
     }
     .accessibilityLabel(self.data.alt)
   }
 
-  @ViewBuilder
-  private var playButton: some View {
-    if let customPlayButton = self.customPlayButton {
-      customPlayButton
-    } else {
-      // Default play button
-      Image(systemName: "play.circle.fill")
-        .font(.system(size: 60))
-        .foregroundColor(self.playButtonTint ?? .white)
-        .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
-    }
+  private var thumbnail: some View {
+    Rectangle()
+      .fill(self.theme.videoThumbnailBackgroundColor ?? Color.gray.opacity(0.3))
+      .aspectRatio(16/9, contentMode: .fit)
+      .overlay(
+        VStack {
+          Spacer()
+          Text(self.data.alt)
+            .font(.headline)
+            .foregroundColor(self.theme.videoTitleTextColor ?? .white)
+            .padding()
+            .frame(maxWidth: .infinity)
+            .background(self.theme.videoTitleBackgroundColor ?? Color.black.opacity(0.5))
+        }
+      )
+      .cornerRadius(12)
   }
+
+  @ViewBuilder
+    private var playButton: some View {
+        Image(systemName: "play.circle.fill")
+            .font(.system(size: 60))
+            .foregroundColor(self.theme.videoPlayButtonColor ?? .white)
+            .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
+    }
 
   private var content: BlockNode {
     .paragraph(
