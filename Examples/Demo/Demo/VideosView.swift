@@ -33,27 +33,35 @@ struct VideosView: View {
         }
       }
 
-      Section("Custom Play Button") {
+      Section("Custom Thumbnail Colors") {
         Markdown(self.content)
-          .markdownVideoPlayButton {
+          .markdownBlockStyle(\.video) { configuration in
             ZStack {
-              Circle()
-                .fill(Color.blue)
-                .frame(width: 80, height: 80)
-              Image(systemName: "play.fill")
-                .font(.system(size: 30))
-                .foregroundColor(.white)
-                .offset(x: 3) // Slight offset to center the play icon
+              // Custom thumbnail with configuration colors
+              Rectangle()
+                .fill(configuration.thumbnailBackgroundColor ?? Color.blue.opacity(0.3))
+                .aspectRatio(16/9, contentMode: .fit)
+                .overlay(
+                  VStack {
+                    Spacer()
+                    Text(configuration.title)
+                      .font(.headline)
+                      .foregroundColor(configuration.titleTextColor ?? .yellow)
+                      .padding()
+                      .frame(maxWidth: .infinity)
+                      .background(configuration.titleBackgroundColor ?? Color.red.opacity(0.7))
+                  }
+                )
+                .cornerRadius(12)
+              
+              // Play button with configuration color
+              Image(systemName: "play.circle.fill")
+                .font(.system(size: 60))
+                .foregroundColor(configuration.playButtonColor ?? .white)
+                .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
+                .offset(y: -25)
             }
           }
-          .markdownVideoAction { url in
-            print("Custom button tapped: \(url)")
-          }
-      }
-
-      Section("Custom Thumbnail Provider") {
-        Markdown(self.content)
-          .markdownVideoProvider(CustomVideoProvider())
           .markdownVideoAction { url in
             print("Custom thumbnail video tapped: \(url)")
           }
@@ -62,31 +70,6 @@ struct VideosView: View {
   }
 }
 
-struct CustomVideoProvider: VideoProvider {
-  func makeThumbnail(url: URL?, title: String) -> some View {
-    ZStack {
-      // Gradient background
-      LinearGradient(
-        colors: [Color.blue.opacity(0.6), Color.purple.opacity(0.6)],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-      )
-      .aspectRatio(16/9, contentMode: .fit)
-      
-      // Title overlay
-      VStack {
-        Spacer()
-        Text(title)
-          .font(.headline)
-          .foregroundColor(.white)
-          .padding()
-          .frame(maxWidth: .infinity)
-          .background(Color.black.opacity(0.5))
-      }
-    }
-    .cornerRadius(12)
-  }
-}
 
 struct VideosView_Previews: PreviewProvider {
   static var previews: some View {

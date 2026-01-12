@@ -10,12 +10,16 @@ public struct DefaultVideoProvider: VideoProvider {
       .aspectRatio(16/9, contentMode: .fit)
       .overlay(
         VStack {
+          Spacer()
           Text(title)
-            .font(.caption)
+            .font(.headline)
             .foregroundColor(.white)
             .padding()
+            .frame(maxWidth: .infinity)
+            .background(Color.black.opacity(0.5))
         }
       )
+      .cornerRadius(12)
   }
 }
 
