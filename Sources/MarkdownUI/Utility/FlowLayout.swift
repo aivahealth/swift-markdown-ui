@@ -1,9 +1,13 @@
 import SwiftUI
+import AivaSDK
 
 @available(iOS 16.0, macOS 13.0, tvOS 16.0, watchOS 9.0, *)
 struct FlowLayout: Layout {
   let horizontalSpacing: CGFloat
   let verticalSpacing: CGFloat
+  
+  // Access logger via environment - we'll need to pass it through ImageFlow
+  // For now, we'll log via a static approach or skip logging here
 
   func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout Void) -> CGSize {
     let rows = self.computeLayout(for: proposal, subviews: subviews)
@@ -52,9 +56,12 @@ extension FlowLayout {
       // this way we can use a spacer view for hard line breaks
       let proposedWidth =
         view.priority < 0 ? proposal.width.map { $0 - currentRow.size.width } : proposal.width
+      // Cap proposedWidth at 400pt to prevent oversized images
+      // This ensures images don't exceed a reasonable screen width
+      let constrainedWidth = proposedWidth.map { min($0, 400) } ?? 400
       let item = Item(
         index: index,
-        size: view.sizeThatFits(.init(width: proposedWidth, height: nil))
+        size: view.sizeThatFits(.init(width: constrainedWidth, height: nil))
       )
 
       if currentRow.size.width > 0,
