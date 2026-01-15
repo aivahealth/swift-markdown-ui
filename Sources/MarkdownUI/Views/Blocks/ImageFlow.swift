@@ -1,10 +1,7 @@
 import SwiftUI
-import AivaSDK
 
 @available(iOS 16.0, macOS 13.0, tvOS 16.0, watchOS 9.0, *)
 struct ImageFlow: View {
-  @SwiftUI.Environment(\.markdownLogger) private var logger
-  
   private enum Item: Hashable {
     case image(RawImageData)
     case lineBreak
@@ -13,12 +10,6 @@ struct ImageFlow: View {
   private let items: [Indexed<Item>]
 
   var body: some View {
-    // #region agent log
-    let _ = {
-      let imageCount = items.filter { if case .image = $0.value { return true }; return false }.count
-      logger?.logInfo("[H6] ImageFlow body: imageCount=\(imageCount), totalItems=\(items.count)")
-    }()
-    // #endregion
     TextStyleAttributesReader { attributes in
       let spacing = RelativeSize.rem(0.25).points(relativeTo: attributes.fontProperties)
 
@@ -32,17 +23,6 @@ struct ImageFlow: View {
           }
         }
       }
-      .background(
-        GeometryReader { proxy in
-          // #region agent log
-          let _ = {
-            let imageCount = items.filter { if case .image = $0.value { return true }; return false }.count
-            logger?.logInfo("[H6] ImageFlow GeometryReader: availableSize=\(proxy.size.width)x\(proxy.size.height), imageCount=\(imageCount)")
-          }()
-          // #endregion
-          Color.clear
-        }
-      )
     }
   }
 }

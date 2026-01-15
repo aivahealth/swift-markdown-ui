@@ -1,13 +1,11 @@
 import SwiftUI
 import Foundation
-import AivaSDK
 
 struct ImageView: View {
   @SwiftUI.Environment(\.theme.image) private var image
   @SwiftUI.Environment(\.imageProvider) private var imageProvider
   @SwiftUI.Environment(\.imageBaseURL) private var baseURL
   @SwiftUI.Environment(\.imageAction) private var imageAction
-  @SwiftUI.Environment(\.markdownLogger) private var logger
 
   private let data: RawImageData
   
@@ -18,14 +16,6 @@ struct ImageView: View {
   }
 
   var body: some View {
-    // #region agent log
-    let _ = {
-      let logMsg = "[H7] ImageView body: url=\(url?.absoluteString ?? "nil"), logger=\(logger != nil ? "present" : "nil")"
-      logger?.logInfo(logMsg)
-      // Fallback print to ensure we see this even if logger isn't available
-      print(logMsg)
-    }()
-    // #endregion
     self.image.makeBody(
       configuration: .init(
         label: .init(self.label),
@@ -102,46 +92,6 @@ extension ImageView {
     }
 
     guard significantInlines.count == 1, let data = significantInlines.first?.imageData else {
-      // #region agent log
-      // This is our "canary" for why image paragraphs fall back to InlineText.
-      // Kept intentionally short to avoid log spam.
-      if inlines.contains(where: { if case .image = $0 { return true }; return false }) {
-        func describe(_ inline: InlineNode) -> String {
-          switch inline {
-          case .text(let t):
-            let trimmed = t.trimmingCharacters(in: .whitespacesAndNewlines)
-            let prefix = String(trimmed.prefix(12))
-            return "text(len=\(t.count), trimmedLen=\(trimmed.count), prefix=\(prefix.debugDescription))"
-          case .softBreak:
-            return "softBreak"
-          case .lineBreak:
-            return "lineBreak"
-          case .code(let t):
-            return "code(len=\(t.count))"
-          case .html(let t):
-            let trimmed = t.trimmingCharacters(in: .whitespacesAndNewlines)
-            let prefix = String(trimmed.prefix(12))
-            return "html(len=\(t.count), trimmedLen=\(trimmed.count), prefix=\(prefix.debugDescription))"
-          case .emphasis(let children):
-            return "emphasis(children=\(children.count))"
-          case .strong(let children):
-            return "strong(children=\(children.count))"
-          case .strikethrough(let children):
-            return "strikethrough(children=\(children.count))"
-          case .link:
-            return "link"
-          case .image:
-            return "image"
-          case .video:
-            return "video"
-          }
-        }
-
-        let allDesc = inlines.map(describe).joined(separator: ", ")
-        let sigDesc = significantInlines.map(describe).joined(separator: ", ")
-        print("[IV0] ImageView init? rejected: inlines=\(inlines.count), significant=\(significantInlines.count), all=[\(allDesc)], significant=[\(sigDesc)]")
-      }
-      // #endregion
       return nil
     }
 

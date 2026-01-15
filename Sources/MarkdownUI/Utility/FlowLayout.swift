@@ -1,5 +1,4 @@
 import SwiftUI
-import AivaSDK
 
 @available(iOS 16.0, macOS 13.0, tvOS 16.0, watchOS 9.0, *)
 struct FlowLayout: Layout {
@@ -56,12 +55,9 @@ extension FlowLayout {
       // this way we can use a spacer view for hard line breaks
       let proposedWidth =
         view.priority < 0 ? proposal.width.map { $0 - currentRow.size.width } : proposal.width
-      // Cap proposedWidth at 400pt to prevent oversized images
-      // This ensures images don't exceed a reasonable screen width
-      let constrainedWidth = proposedWidth.map { min($0, 400) } ?? 400
       let item = Item(
         index: index,
-        size: view.sizeThatFits(.init(width: constrainedWidth, height: nil))
+        size: view.sizeThatFits(.init(width: proposedWidth, height: nil))
       )
 
       if currentRow.size.width > 0,
