@@ -11,10 +11,17 @@ public struct DefaultImageProvider: ImageProvider {
 
 private struct NetworkImageWithLogging: View {
   @SwiftUI.Environment(\.markdownLogger) private var logger
-  @SwiftUI.State private var cachedIdealSize: CGSize?
   let url: URL?
   
   var body: some View {
+    // #region agent log
+    let _ = {
+      let logMsg = "[H0] NetworkImageWithLogging body: url=\(url?.absoluteString ?? "nil"), logger=\(logger != nil ? "present" : "nil")"
+      logger?.logInfo(logMsg)
+      // Fallback print to ensure we see this even if logger isn't available
+      print(logMsg)
+    }()
+    // #endregion
     NetworkImage(url: url) { state in
       // #region agent log
       let _ = {
@@ -24,8 +31,7 @@ private struct NetworkImageWithLogging: View {
         case .failure: stateStr = "failure"
         case .success(_, let idealSize): stateStr = "success(\(idealSize.width)x\(idealSize.height))"
         }
-        let cachedSizeStr = cachedIdealSize != nil ? "\(cachedIdealSize!.width)x\(cachedIdealSize!.height)" : "nil"
-        logger?.logInfo("[H1] DefaultImageProvider NetworkImage state change: url=\(url?.absoluteString ?? "nil"), state=\(stateStr), cachedIdealSize=\(cachedSizeStr)")
+        logger?.logInfo("[H1] DefaultImageProvider NetworkImage state change: url=\(url?.absoluteString ?? "nil"), state=\(stateStr)")
       }()
       // #endregion
       switch state {
@@ -35,12 +41,14 @@ private struct NetworkImageWithLogging: View {
         Color.clear
           .frame(width: 0, height: 0)
       case .success(let image, let idealSize):
-        // Cache the ideal size for use in placeholder
+        // #region agent log
         let _ = {
-          if cachedIdealSize != idealSize {
-            cachedIdealSize = idealSize
-          }
+          let logMsg = "[H8] DefaultImageProvider creating ResizeToFit: idealSize=\(idealSize.width)x\(idealSize.height), url=\(url?.absoluteString ?? "nil"), logger=\(logger != nil ? "present" : "nil")"
+          logger?.logInfo(logMsg)
+          // Fallback print to ensure we see this even if logger isn't available
+          print(logMsg)
         }()
+        // #endregion
         ResizeToFit(idealSize: idealSize) {
           image.resizable()
         }

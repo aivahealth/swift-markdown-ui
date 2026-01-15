@@ -1,11 +1,13 @@
 import SwiftUI
 import Foundation
+import AivaSDK
 
 struct ImageView: View {
-  @Environment(\.theme.image) private var image
-  @Environment(\.imageProvider) private var imageProvider
-  @Environment(\.imageBaseURL) private var baseURL
-  @Environment(\.imageAction) private var imageAction
+  @SwiftUI.Environment(\.theme.image) private var image
+  @SwiftUI.Environment(\.imageProvider) private var imageProvider
+  @SwiftUI.Environment(\.imageBaseURL) private var baseURL
+  @SwiftUI.Environment(\.imageAction) private var imageAction
+  @SwiftUI.Environment(\.markdownLogger) private var logger
 
   private let data: RawImageData
   
@@ -16,6 +18,14 @@ struct ImageView: View {
   }
 
   var body: some View {
+    // #region agent log
+    let _ = {
+      let logMsg = "[H7] ImageView body: url=\(url?.absoluteString ?? "nil"), logger=\(logger != nil ? "present" : "nil")"
+      logger?.logInfo(logMsg)
+      // Fallback print to ensure we see this even if logger isn't available
+      print(logMsg)
+    }()
+    // #endregion
     self.image.makeBody(
       configuration: .init(
         label: .init(self.label),
@@ -72,9 +82,69 @@ struct ImageView: View {
 
 extension ImageView {
   init?(_ inlines: [InlineNode]) {
-    guard inlines.count == 1, let data = inlines.first?.imageData else {
+    // In markdown lists, an "image-only paragraph" is often indented, which introduces
+    // whitespace-only `.text("  ")` nodes around the `.image(...)` node.
+    // If we don't ignore those, we fall back to InlineText which renders images as inline glyphs
+    // (and can lead to incorrect sizing / overlap).
+    let significantInlines = inlines.filter { inline in
+      switch inline {
+      case .text(let text):
+        // Treat NBSP as whitespace too (list indentation sometimes produces it)
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "\u{00A0}", with: "")
+        return !trimmed.isEmpty
+      case .softBreak:
+        return false
+      case .lineBreak:
+        return false
+      default:
+        return true
+      }
+    }
+
+    guard significantInlines.count == 1, let data = significantInlines.first?.imageData else {
+      // #region agent log
+      // This is our "canary" for why image paragraphs fall back to InlineText.
+      // Kept intentionally short to avoid log spam.
+      if inlines.contains(where: { if case .image = $0 { return true }; return false }) {
+        func describe(_ inline: InlineNode) -> String {
+          switch inline {
+          case .text(let t):
+            let trimmed = t.trimmingCharacters(in: .whitespacesAndNewlines)
+            let prefix = String(trimmed.prefix(12))
+            return "text(len=\(t.count), trimmedLen=\(trimmed.count), prefix=\(prefix.debugDescription))"
+          case .softBreak:
+            return "softBreak"
+          case .lineBreak:
+            return "lineBreak"
+          case .code(let t):
+            return "code(len=\(t.count))"
+          case .html(let t):
+            let trimmed = t.trimmingCharacters(in: .whitespacesAndNewlines)
+            let prefix = String(trimmed.prefix(12))
+            return "html(len=\(t.count), trimmedLen=\(trimmed.count), prefix=\(prefix.debugDescription))"
+          case .emphasis(let children):
+            return "emphasis(children=\(children.count))"
+          case .strong(let children):
+            return "strong(children=\(children.count))"
+          case .strikethrough(let children):
+            return "strikethrough(children=\(children.count))"
+          case .link:
+            return "link"
+          case .image:
+            return "image"
+          case .video:
+            return "video"
+          }
+        }
+
+        let allDesc = inlines.map(describe).joined(separator: ", ")
+        let sigDesc = significantInlines.map(describe).joined(separator: ", ")
+        print("[IV0] ImageView init? rejected: inlines=\(inlines.count), significant=\(significantInlines.count), all=[\(allDesc)], significant=[\(sigDesc)]")
+      }
+      // #endregion
       return nil
     }
+
     self.init(data: data)
   }
 }
@@ -91,8 +161,8 @@ extension View {
 }
 
 private struct ImageTapModifier: ViewModifier {
-  @Environment(\.baseURL) private var baseURL
-  @Environment(\.openURL) private var openURL
+  @SwiftUI.Environment(\.baseURL) private var baseURL
+  @SwiftUI.Environment(\.openURL) private var openURL
 
   let action: ImageAction?
   let destination: String?

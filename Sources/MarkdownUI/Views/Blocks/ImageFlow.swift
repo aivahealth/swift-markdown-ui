@@ -13,6 +13,12 @@ struct ImageFlow: View {
   private let items: [Indexed<Item>]
 
   var body: some View {
+    // #region agent log
+    let _ = {
+      let imageCount = items.filter { if case .image = $0.value { return true }; return false }.count
+      logger?.logInfo("[H6] ImageFlow body: imageCount=\(imageCount), totalItems=\(items.count)")
+    }()
+    // #endregion
     TextStyleAttributesReader { attributes in
       let spacing = RelativeSize.rem(0.25).points(relativeTo: attributes.fontProperties)
 
@@ -30,7 +36,8 @@ struct ImageFlow: View {
         GeometryReader { proxy in
           // #region agent log
           let _ = {
-            logger?.logInfo("[H6] ImageFlow GeometryReader: availableSize=\(proxy.size.width)x\(proxy.size.height), imageCount=\(items.filter { if case .image = $0.value { return true }; return false }.count)")
+            let imageCount = items.filter { if case .image = $0.value { return true }; return false }.count
+            logger?.logInfo("[H6] ImageFlow GeometryReader: availableSize=\(proxy.size.width)x\(proxy.size.height), imageCount=\(imageCount)")
           }()
           // #endregion
           Color.clear
@@ -47,7 +54,7 @@ extension ImageFlow {
 
     for inline in inlines {
       switch inline {
-      case let .text(text) where text.isEmpty:
+      case let .text(text) where text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty:
         continue
       case .softBreak:
         continue

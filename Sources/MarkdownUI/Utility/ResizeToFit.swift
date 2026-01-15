@@ -8,6 +8,9 @@ struct ResizeToFit<Content>: View where Content: View {
   init(idealSize: CGSize, @ViewBuilder content: () -> Content) {
     self.idealSize = idealSize
     self.content = content()
+    // #region agent log
+    // Note: Can't access logger here as it's not in environment yet
+    // #endregion
   }
 
   var body: some View {
@@ -33,34 +36,33 @@ private struct ResizeToFit1<Content>: View where Content: View {
   let content: Content
 
   var body: some View {
-    GeometryReader { proxy in
-      // Constrain the proposal width to 400pt max before calculating size
-      let constrainedProposal = CGSize(
-        width: min(proxy.size.width, 400),
-        height: proxy.size.height
+    let aspectRatio = idealSize.width / idealSize.height
+    
+    // #region agent log
+    let _ = {
+      let logMsg = "[H2] ResizeToFit1 body: idealSize=\(idealSize.width)x\(idealSize.height), aspectRatio=\(aspectRatio), logger=\(logger != nil ? "present" : "nil")"
+      logger?.logInfo(logMsg)
+      print(logMsg)
+    }()
+    // #endregion
+    
+    self.content
+      // Fit to the width proposed by the parent, but cap at 400pt to avoid giant images.
+      .aspectRatio(aspectRatio, contentMode: .fit)
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .frame(maxWidth: 400, alignment: .leading)
+      .background(
+        GeometryReader { proxy in
+          // #region agent log
+          let _ = {
+            let logMsg = "[H9] ResizeToFit1 final frame size: width=\(proxy.size.width), height=\(proxy.size.height)"
+            logger?.logInfo(logMsg)
+            print(logMsg)
+          }()
+          // #endregion
+          Color.clear
+        }
       )
-      let size = self.sizeThatFits(proposal: constrainedProposal)
-      // #region agent log
-      let _ = {
-        let storedSizeStr = self.size != nil ? "\(self.size!.width)x\(self.size!.height)" : "nil"
-        let aspectRatio = idealSize.width > 0 && idealSize.height > 0 ? idealSize.width / idealSize.height : 0
-        logger?.logInfo("[H2] ResizeToFit1 GeometryReader: proposal=\(proxy.size.width)x\(proxy.size.height), constrainedProposal=\(constrainedProposal.width)x\(constrainedProposal.height), idealSize=\(idealSize.width)x\(idealSize.height) (aspectRatio=\(aspectRatio)), calculatedSize=\(size.width)x\(size.height), storedSize=\(storedSizeStr)")
-      }()
-      // #endregion
-      self.content
-        .frame(width: size.width, height: size.height)
-        .preference(key: SizePreference.self, value: size)
-    }
-    .frame(width: size?.width, height: size?.height)
-    .frame(maxWidth: 400) // Constrain the outer frame to prevent expansion beyond 400pt
-    .onPreferenceChange(SizePreference.self) { newSize in
-      // #region agent log
-      let oldSizeStr = self.size != nil ? "\(self.size!.width)x\(self.size!.height)" : "nil"
-      let newSizeStr = newSize != nil ? "\(newSize!.width)x\(newSize!.height)" : "nil"
-      logger?.logInfo("[H3] ResizeToFit1 size preference changed: oldSize=\(oldSizeStr), newSize=\(newSizeStr)")
-      // #endregion
-      self.size = newSize
-    }
   }
 
   private func sizeThatFits(proposal: CGSize) -> CGSize {
