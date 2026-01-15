@@ -111,5 +111,3 @@ private struct SplitLinesParagraph: View {
   }
 
 }
-
-// Note: `VerticalAlignment.centerOfFirstLine` is already defined in `ListItemView.swift`.
