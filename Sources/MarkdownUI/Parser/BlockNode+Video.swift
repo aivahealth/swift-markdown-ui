@@ -82,7 +82,7 @@ extension String {
     let matches = regex.matches(in: mutableString as String, options: [], range: range).reversed()
     
     for match in matches {
-      guard match.numberOfRanges == 3 else { continue }
+      guard match.numberOfRanges >= 3 else { continue }
       let altRange = match.range(at: 1)
       let urlRange = match.range(at: 2)
       
@@ -96,8 +96,19 @@ extension String {
       
       // Unescape special characters in alt text
       let unescapedAlt = altText.replacingOccurrences(of: "\\[", with: "[").replacingOccurrences(of: "\\]", with: "]")
-      
-      let replacement = "!video[\(unescapedAlt)](\(urlText))"
+
+      // Parse optional poster metadata encoded in alt text
+      let (title, poster) = {
+        guard let markerRange = unescapedAlt.range(of: "||poster=") else {
+          return (unescapedAlt, nil as String?)
+        }
+        let title = String(unescapedAlt[..<markerRange.lowerBound])
+        let poster = String(unescapedAlt[markerRange.upperBound...])
+        return (title, poster.isEmpty ? nil : poster)
+      }()
+
+      let posterSuffix = poster.map { "{poster=\($0)}" } ?? ""
+      let replacement = "!video[\(title)](\(urlText))\(posterSuffix)"
       mutableString.replaceCharacters(in: match.range, with: replacement)
     }
     
@@ -110,7 +121,7 @@ extension String {
     // Replace with: ![video:Alt Text](video_url.mp4)
     // Note: We need to match !video that is NOT followed by [ (to avoid matching !video[ which would be invalid)
     // But actually !video[ is what we want, so the pattern is correct
-    let pattern = #"!video\[([^\]]+)\]\(([^\)]+)\)"#
+    let pattern = #"!video\[([^\]]+)\]\(([^\)]+)\)\s*(\{[^}]*\})?"#
     guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
       return self
     }
@@ -122,7 +133,7 @@ extension String {
     let matches = regex.matches(in: mutableString as String, options: [], range: range).reversed()
     
     for match in matches {
-      guard match.numberOfRanges == 3 else { continue }
+      guard match.numberOfRanges >= 3 else { continue }
       let altRange = match.range(at: 1)
       let urlRange = match.range(at: 2)
       
@@ -133,14 +144,32 @@ extension String {
       
       let altText = mutableString.substring(with: altRange)
       let urlText = mutableString.substring(with: urlRange)
+
+      var poster: String?
+      if match.numberOfRanges >= 4 {
+        let attrsRange = match.range(at: 3)
+        if attrsRange.location != NSNotFound {
+          let attrsText = mutableString.substring(with: attrsRange)
+          if let posterRange = attrsText.range(of: #"poster\s*=\s*([^\s,}]+)"#, options: .regularExpression) {
+            let value = String(attrsText[posterRange])
+            if let eqIndex = value.firstIndex(of: "=") {
+              poster = String(value[value.index(after: eqIndex)...])
+            }
+          }
+        }
+      }
       
       // Escape special characters in alt text for markdown if needed
-      let escapedAlt = altText.replacingOccurrences(of: "[", with: "\\[").replacingOccurrences(of: "]", with: "\\]")
+      var combinedAlt = altText
+      if let poster {
+        combinedAlt = "\(altText)||poster=\(poster)"
+      }
+      let escapedAlt = combinedAlt.replacingOccurrences(of: "[", with: "\\[").replacingOccurrences(of: "]", with: "\\]")
       
       let replacement = "![video:\(escapedAlt)](\(urlText))"
       mutableString.replaceCharacters(in: match.range, with: replacement)
     }
-    
+
     return mutableString as String
   }
 }

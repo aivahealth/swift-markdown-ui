@@ -1,3 +1,4 @@
+import NetworkImage
 import SwiftUI
 
 struct VideoView: View {
@@ -56,6 +57,7 @@ struct VideoView: View {
     Rectangle()
       .fill(self.theme.videoThumbnailBackgroundColor ?? Color.gray.opacity(0.3))
       .aspectRatio(16/9, contentMode: .fit)
+      .overlay(self.posterOverlay)
       .overlay(
         VStack {
           Spacer()
@@ -87,9 +89,39 @@ struct VideoView: View {
   private var url: URL? {
     URL(string: self.data.source, relativeTo: self.baseURL)
   }
+
+  private var posterURL: URL? {
+    guard let poster = self.data.poster else { return nil }
+    return URL(string: poster, relativeTo: self.baseURL)
+  }
+
+  @ViewBuilder private var posterOverlay: some View {
+    if let posterURL = self.posterURL {
+      NetworkImage(url: posterURL) { state in
+        switch state {
+        case .success(let image, _):
+          image.resizable().scaledToFill().clipped()
+        case .empty:
+          Color.clear
+        case .failure:
+          Color.clear
+        }
+      }
+      .clipped()
+    }
+  }
 }
 
 extension VideoView {
+  private static func parseAlt(_ alt: String) -> (title: String, poster: String?) {
+    guard let markerRange = alt.range(of: "||poster=") else {
+      return (alt, nil)
+    }
+    let title = String(alt[..<markerRange.lowerBound])
+    let poster = String(alt[markerRange.upperBound...])
+    return (title, poster.isEmpty ? nil : poster)
+  }
+
   init?(_ inlines: [InlineNode]) {
     // First, try to find a video node directly
     for inline in inlines {
@@ -103,7 +135,8 @@ extension VideoView {
         let altText = children.renderPlainText()
         if altText.hasPrefix("video:") {
           let actualAlt = String(altText.dropFirst(6)) // "video:".count = 6
-          let videoData = RawVideoData(source: source, alt: actualAlt)
+          let parsed = Self.parseAlt(actualAlt)
+          let videoData = RawVideoData(source: source, alt: parsed.title, poster: parsed.poster)
           self.init(data: videoData)
           return
         }
@@ -139,7 +172,8 @@ extension VideoView {
       let altText = children.renderPlainText()
       if altText.hasPrefix("video:") {
         let actualAlt = String(altText.dropFirst(6)) // "video:".count = 6
-        let videoData = RawVideoData(source: source, alt: actualAlt)
+        let parsed = Self.parseAlt(actualAlt)
+        let videoData = RawVideoData(source: source, alt: parsed.title, poster: parsed.poster)
         self.init(data: videoData)
         return
       }
