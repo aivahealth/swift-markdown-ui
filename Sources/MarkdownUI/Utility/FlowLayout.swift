@@ -4,6 +4,9 @@ import SwiftUI
 struct FlowLayout: Layout {
   let horizontalSpacing: CGFloat
   let verticalSpacing: CGFloat
+  
+  // Access logger via environment - we'll need to pass it through ImageFlow
+  // For now, we'll log via a static approach or skip logging here
 
   func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout Void) -> CGSize {
     let rows = self.computeLayout(for: proposal, subviews: subviews)

@@ -11,7 +11,15 @@ struct VideosView: View {
 
     !video[Video Example](https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4)
 
-    The video will display with a thumbnail and a play button. When the play button is tapped, 
+    You can also provide a poster thumbnail with `{poster=...}`:
+
+    ```
+    !video[Big Buck Bunny](https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4){poster=https://peach.blender.org/wp-content/uploads/title_anouncement.jpg}
+    ```
+
+    !video[Video With Poster](https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4){poster=https://peach.blender.org/wp-content/uploads/title_anouncement.jpg}
+
+    The video will display with a thumbnail and a play button. When the play button is tapped,
     the video action callback is triggered with the video URL.
     """
 

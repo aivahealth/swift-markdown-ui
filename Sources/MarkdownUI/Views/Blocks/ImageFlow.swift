@@ -34,7 +34,7 @@ extension ImageFlow {
 
     for inline in inlines {
       switch inline {
-      case let .text(text) where text.isEmpty:
+      case let .text(text) where text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty:
         continue
       case .softBreak:
         continue
