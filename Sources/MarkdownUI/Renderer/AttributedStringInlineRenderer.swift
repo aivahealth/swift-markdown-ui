@@ -61,6 +61,8 @@ private struct AttributedStringInlineRenderer {
       self.renderLink(destination: destination, children: children)
     case .image(let source, let children):
       self.renderImage(source: source, children: children)
+    case .video(let source, let children):
+      self.renderVideo(source: source, children: children)
     }
   }
 
@@ -153,6 +155,13 @@ private struct AttributedStringInlineRenderer {
 
   private mutating func renderImage(source: String, children: [InlineNode]) {
     // AttributedString does not support images
+  }
+
+  private mutating func renderVideo(source: String, children: [InlineNode]) {
+    // Render video title as text in AttributedString
+    for child in children {
+      self.render(child)
+    }
   }
 }
 

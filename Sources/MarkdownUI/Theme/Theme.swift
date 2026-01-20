@@ -171,6 +171,23 @@ public struct Theme: Sendable {
   /// The image style.
   public var image = BlockStyle<BlockConfiguration> { $0.label }
 
+  /// The video thumbnail background color.
+  public var videoThumbnailBackgroundColor: Color? = Color.gray.opacity(0.3)
+
+  /// The video title text color.
+  public var videoTitleTextColor: Color? = .white
+
+  /// The video title background overlay color.
+  public var videoTitleBackgroundColor: Color? = Color.black.opacity(0.5)
+
+  /// The video play button color.
+  public var videoPlayButtonColor: Color? = .white
+
+  /// The video style.
+  public var video = BlockStyle<VideoConfiguration> { configuration in
+    configuration.label
+  }
+
   /// The list style.
   public var list = BlockStyle<BlockConfiguration> { $0.label }
 
@@ -347,6 +364,48 @@ extension Theme {
   ) -> Theme {
     var theme = self
     theme.image = .init(body: body)
+    return theme
+  }
+
+  /// Sets the video thumbnail background color.
+  /// - Parameter color: The background color for video thumbnails.
+  public func videoThumbnailBackgroundColor(_ color: Color?) -> Theme {
+    var theme = self
+    theme.videoThumbnailBackgroundColor = color
+    return theme
+  }
+
+  /// Sets the video title text color.
+  /// - Parameter color: The text color for video titles.
+  public func videoTitleTextColor(_ color: Color?) -> Theme {
+    var theme = self
+    theme.videoTitleTextColor = color
+    return theme
+  }
+
+  /// Sets the video title background overlay color.
+  /// - Parameter color: The background overlay color for video titles.
+  public func videoTitleBackgroundColor(_ color: Color?) -> Theme {
+    var theme = self
+    theme.videoTitleBackgroundColor = color
+    return theme
+  }
+
+  /// Sets the video play button color.
+  /// - Parameter color: The color for the video play button.
+  public func videoPlayButtonColor(_ color: Color?) -> Theme {
+    var theme = self
+    theme.videoPlayButtonColor = color
+    return theme
+  }
+
+  /// Adds a video style to the theme.
+  /// - Parameter body: A view builder that returns a customized video block.
+  public func video<Body: View>(
+    @ViewBuilder body: @escaping (_ configuration: VideoConfiguration) -> Body
+  ) -> Theme {
+    var theme = self
+    theme.video = .init(body: body)
     return theme
   }
 

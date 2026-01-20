@@ -60,6 +60,9 @@ private struct TextInlineRenderer {
       self.renderHTML(content)
     case .image(let source, _):
       self.renderImage(source)
+    case .video:
+      // Videos are rendered as their title text
+      self.defaultRender(inline)
     default:
       self.defaultRender(inline)
     }

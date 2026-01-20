@@ -9,6 +9,11 @@ extension Sequence where Element == BlockNode {
           return []
         }
         return [inline]
+      case .video(let source, _):
+        guard let url = URL(string: source), url.matchesColorScheme(colorScheme) else {
+          return []
+        }
+        return [inline]
       default:
         return [inline]
       }
